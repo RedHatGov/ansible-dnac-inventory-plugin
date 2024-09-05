@@ -11,7 +11,8 @@ DOCUMENTATION = r'''
     description:
         - Retrieves inventory from DNA Center
         - Adds inventory to ansible working inventory
-
+    extends_documentation_fragment:
+        - constructed
     options:
         plugin:  
             description: Name of the plugin
@@ -20,15 +21,21 @@ DOCUMENTATION = r'''
         host: 
             description: FQDN of the target host 
             required: true
+            env:
+                - name: DNAC_HOST
         dnac_version:
             description: DNAC PythonSDK requires a supported DNAC version key
             required: true
         username: 
             description: user credential for target system 
             required: true
+            env:
+                - name: DNAC_USERNAME
         password: 
             description: user pass for the target system
             required: true
+            env:
+                - name: DNAC_PASSWORD
         validate_certs: 
             description: certificate validation
             required: false
@@ -56,7 +63,7 @@ EXAMPLES = r'''
 from ansible.errors import AnsibleError, AnsibleParserError
 from ansible.module_utils._text import to_bytes, to_native
 from ansible.parsing.utils.addresses import parse_address
-from ansible.plugins.inventory import BaseInventoryPlugin
+from ansible.plugins.inventory import BaseInventoryPlugin, Constructable
 
 import json
 import sys
@@ -269,32 +276,38 @@ class InventoryModule(BaseInventoryPlugin):
         for h in self._host_list: 
             site_name = self._get_member_site( h['id'] )
             if site_name:
-                self.inventory.add_host(h['hostname'], group=site_name)
+                host_name = self.inventory.add_host(h['hostname'], group=site_name)
                 
                 #  add variables to the hosts
                 if self.use_dnac_mgmt_int:
-                    self.inventory.set_variable(h['hostname'],'ansible_host',h['managementIpAddress'])
+                    self.inventory.set_variable(host_name,'ansible_host',h['managementIpAddress'])
 
-                self.inventory.set_variable(h['hostname'], 'os', h['os'])
-                self.inventory.set_variable(h['hostname'], 'version', h['version'])
-                self.inventory.set_variable(h['hostname'], 'reachability_status', h['reachabilityStatus'])
-                self.inventory.set_variable(h['hostname'], 'serial_number', h['serialNumber'])
-                self.inventory.set_variable(h['hostname'], 'hw_type', h['series'])
+                self.inventory.set_variable(host_name, 'os', h['os'])
+                self.inventory.set_variable(host_name, 'version', h['version'])
+                self.inventory.set_variable(host_name, 'reachability_status', h['reachabilityStatus'])
+                self.inventory.set_variable(host_name, 'serial_number', h['serialNumber'])
+                self.inventory.set_variable(host_name, 'hw_type', h['series'])
                 # DNAC API calls operate on id of each managed element
-                self.inventory.set_variable(h['hostname'], 'id', h['id'])
+                self.inventory.set_variable(host_name, 'id', h['id'])
 
                 if h['os'].lower() in ['ios', 'ios-xe', 'unified ap']:
-                    self.inventory.set_variable(h['hostname'], 'ansible_network_os', 'ios')
-                    self.inventory.set_variable(h['hostname'], 'ansible_connection', 'network_cli')
-                    self.inventory.set_variable(h['hostname'], 'ansible_become', 'yes')
-                    self.inventory.set_variable(h['hostname'], 'ansible_become_method', 'enable')
+                    self.inventory.set_variable(host_name, 'ansible_network_os', 'ios')
+                    self.inventory.set_variable(host_name, 'ansible_connection', 'network_cli')
+                    self.inventory.set_variable(host_name, 'ansible_become', 'yes')
+                    self.inventory.set_variable(host_name, 'ansible_become_method', 'enable')
                 elif h['os'].lower() in ['nxos','nx-os']:
-                    self.inventory.set_variable(h['hostname'], 'ansible_network_os', 'nxos')
-                    self.inventory.set_variable(h['hostname'], 'ansible_connection', 'network_cli')
-                    self.inventory.set_variable(h['hostname'], 'ansible_become', 'yes')
-                    self.inventory.set_variable(h['hostname'], 'ansible_become_method', 'enable')
+                    self.inventory.set_variable(host_name, 'ansible_network_os', 'nxos')
+                    self.inventory.set_variable(host_name, 'ansible_connection', 'network_cli')
+                    self.inventory.set_variable(host_name, 'ansible_become', 'yes')
+                    self.inventory.set_variable(host_name, 'ansible_become_method', 'enable')
+            
+                self._set_composite_vars(self.get_option('compose'), self.inventory.get_host(host_name).get_vars(), host_name, self.strict)
+                self._add_host_to_composed_groups(self.get_option('groups'), dict(), host_name, self.strict)
+                self._add_host_to_keyed_groups(self.get_option('keyed_groups'), dict(), host_name, self.strict)
             else:
                 raise AnsibleError('no site name found for host: {} with site_id {}'.format(h['id'], self._site_list))
+
+
 
 
     def verify_file(self, path):
@@ -326,6 +339,7 @@ class InventoryModule(BaseInventoryPlugin):
             self.validate_certs = self.get_option('validate_certs')
             self.toplevel = self.get_option('toplevel')
             self.api_record_limit = self.get_option('api_record_limit')
+            self.strict = self.get_option('strict')
         except Exception as e: 
             raise AnsibleParserError('getting options failed:  %s' % to_native(e))
 
