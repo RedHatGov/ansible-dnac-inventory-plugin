@@ -169,7 +169,8 @@ class InventoryModule(BaseInventoryPlugin, Constructable):
                     'reachabilityStatus': host['reachabilityStatus'],
                     'role': host['role'],
                     'serialNumber': host['serialNumber'].split(', '),
-                    'series': host['series']
+                    'series': host['series'],
+                    'host': host
                 })
                 host_list.append(host_dict)
         
