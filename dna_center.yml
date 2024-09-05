@@ -16,3 +16,4 @@ use_dnac_mgmt_int: True
 api_record_limit: 500
 keyed_groups:
   - key: os
+  - key: host_data.reachabilityStatus
