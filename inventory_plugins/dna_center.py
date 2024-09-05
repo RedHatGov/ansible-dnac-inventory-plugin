@@ -76,7 +76,7 @@ try:
 except ImportError as e:
     raise AnsibleError('Python requests module is required for this plugin. Error: %s' % to_native(e))
 
-class InventoryModule(BaseInventoryPlugin):
+class InventoryModule(BaseInventoryPlugin, Constructable):
 
     NAME = 'dna_center'
 
