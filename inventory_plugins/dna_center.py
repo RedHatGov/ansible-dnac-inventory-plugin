@@ -170,7 +170,7 @@ class InventoryModule(BaseInventoryPlugin, Constructable):
                     'role': host['role'],
                     'serialNumber': host['serialNumber'].split(', '),
                     'series': host['series'],
-                    'host': host
+                    'host_data': host
                 })
                 host_list.append(host_dict)
         
@@ -290,7 +290,8 @@ class InventoryModule(BaseInventoryPlugin, Constructable):
                 self.inventory.set_variable(host_name, 'hw_type', h['series'])
                 # DNAC API calls operate on id of each managed element
                 self.inventory.set_variable(host_name, 'id', h['id'])
-                self.inventory.set_variable(host_name, 'host_data', h)
+                self.inventory.set_variable(host_name, 'site', site_name)
+                self.inventory.set_variable(host_name, 'host_data', h['host_data'])
 
                 if h['os'].lower() in ['ios', 'ios-xe', 'unified ap']:
                     self.inventory.set_variable(host_name, 'ansible_network_os', 'ios')
