@@ -289,6 +289,7 @@ class InventoryModule(BaseInventoryPlugin, Constructable):
                 self.inventory.set_variable(host_name, 'hw_type', h['series'])
                 # DNAC API calls operate on id of each managed element
                 self.inventory.set_variable(host_name, 'id', h['id'])
+                self.inventory.set_variable(host_name, 'host_data', h)
 
                 if h['os'].lower() in ['ios', 'ios-xe', 'unified ap']:
                     self.inventory.set_variable(host_name, 'ansible_network_os', 'ios')
