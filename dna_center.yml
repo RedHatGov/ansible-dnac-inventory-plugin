@@ -14,6 +14,9 @@ use_dnac_mgmt_int: True
 # pagination is necessary for large-scale deployments which
 # have more than 500 devices under management
 api_record_limit: 500
+compose:
+  - ios_family: "{{ host_data.softwareVersion | regex_replace('/d/./d', 'a\\1') }}"
 keyed_groups:
   - key: os
   - key: host_data.reachabilityStatus
+  - key: 
