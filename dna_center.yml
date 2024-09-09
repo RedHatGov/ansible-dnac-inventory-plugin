@@ -19,4 +19,3 @@ compose:
 keyed_groups:
   - key: os
   - key: host_data.reachabilityStatus
-  - key: 
