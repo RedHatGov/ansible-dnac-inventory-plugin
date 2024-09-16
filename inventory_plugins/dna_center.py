@@ -52,6 +52,18 @@ DOCUMENTATION = r'''
         api_record_limit:
             description: DNAC API calls return maximum of <api_record_limit> records per invocation. Defaults to 500 records
             required: true
+        hostname_filter:
+            description: DNAC search query based on hostname
+            required: false
+        device_family:
+            description: DNAC device family
+            required: false
+            default: 
+                - Switches and Hubs
+                - Routers
+        location_name:
+            descriotion: DNAC location name
+            required: false
 '''
 
 EXAMPLES = r'''
@@ -92,6 +104,9 @@ class InventoryModule(BaseInventoryPlugin, Constructable):
         self.use_dnac_mgmt_int = None
         self.toplevel = None
         self.api_record_limit = 500
+        self.hostname_filter = None
+        self.device_family = None
+        self.location_name = None
         
         # global attributes 
         self._site_list = None
@@ -138,9 +153,12 @@ class InventoryModule(BaseInventoryPlugin, Constructable):
             # beginning with index of '1'
             start_index = offset * self.api_record_limit + 1
             try:
-                inventory_results = (self._dnac_api.devices.get_network_device_by_pagination_range(
-                    records_to_return=self.api_record_limit, 
-                    start_index=start_index)).response
+                inventory_results = (self._dnac_api.devices.get_device_list(
+                    limit=self.api_record_limit, 
+                    offset=start_index,
+                    hostname=self.hostname_filter,
+                    family=self.device_family,
+                    location_name=self.location_name).response)
             except ApiError as e:
                 raise AnsibleParserError('Getting device inventory failed:  %s' % to_native(e))
 
@@ -343,6 +361,9 @@ class InventoryModule(BaseInventoryPlugin, Constructable):
             self.toplevel = self.get_option('toplevel')
             self.api_record_limit = self.get_option('api_record_limit')
             self.strict = self.get_option('strict')
+            self.hostname_filter = self.get_option('hostname_filter')
+            self.device_family = self.get_option('device_family')
+            self.location_name = self.get_option('location_name')
         except Exception as e: 
             raise AnsibleParserError('getting options failed:  %s' % to_native(e))
 
@@ -359,4 +380,3 @@ class InventoryModule(BaseInventoryPlugin, Constructable):
         # Add the hosts to the inventory 
         self._get_hosts()
         self._add_hosts()
-
